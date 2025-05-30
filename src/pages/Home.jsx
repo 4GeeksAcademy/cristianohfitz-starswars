@@ -1,223 +1,104 @@
+import React, { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import useGlobalReducer from "../hooks/useGlobalReducer.jsx";
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+
+const useFetchWithUIDs = (url, imageKey, type, dispatchType, dispatch) => {
+  useEffect(() => {
+    fetch(url)
+      .then((res) => res.json())
+      .then(async (data) => {
+        const details = await Promise.all(
+          data.results.map((item) =>
+            fetch(`${url}/${item.uid}`).then((res) => res.json())
+          )
+        );
+        const enrichedData = details.map((item, index) => ({
+          ...item.result.properties,
+          uid: data.results[index].uid,
+        }));
+        dispatch({ type: dispatchType, payload: enrichedData });
+      })
+      .catch((err) => console.error(`Error fetching ${type}:`, err));
+  }, [url, dispatchType, dispatch]);
+};
+
+const CardSection = ({ title, data, imageBaseUrl, routePrefix, infoFields, dispatch, type }) => {
+  const navigate = useNavigate();
+
+  return (
+    <>
+      <h1>{title}</h1>
+      <div className="d-flex overflow-auto" style={{ scrollSnapType: "x mandatory", gap: "1rem", paddingBottom: "1rem" }}>
+        {data.map((item) => (
+          <div key={item.uid} className="card m-2" style={{ width: "18rem", flexShrink: 0 }}>
+            <img
+              src={`${imageBaseUrl}/${item.uid}.jpg`}
+              onError={(e) => (e.target.src = "https://placehold.co/400x200?text=No+Image")}
+              className="card-img-top"
+              alt={item.name}
+            />
+            <div className="card-body">
+              <h5 className="card-title">{item.name}</h5>
+              {infoFields.map((field) => (
+                <p className="card-text" key={field}>
+                  {field.charAt(0).toUpperCase() + field.slice(1)}: {item[field]}
+                </p>
+              ))}
+              <div className="d-flex justify-content-between gap-1">
+                <button className="btn btn-outline-primary" onClick={() => navigate(`/${routePrefix}-info/${item.uid}`)}>
+                  Read More
+                </button>
+                <button
+                  className="btn btn-outline-warning"
+                  onClick={() => dispatch({ type: "ADD_FAVORITE", payload: item.name })}
+                >
+                  <i className="fa-solid fa-heart"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+};
 
 export const Home = () => {
   const { store, dispatch } = useGlobalReducer();
-  const navigate = useNavigate();
-  const params = useParams();
 
-  const characterData = store.characters;
-  const planetData = store.planets;
-  const vehicleData = store.vehicles;
-
-  useEffect(() => {
-    //Step 1: Get the list of characters (name + uid)
-    fetch(`${store.CHARACTER_URL}`)
-      .then((res) => res.json())
-      .then(async (data) => {
-        //Step 2: Fetch full details for each character by uid
-        const promises = data.results.map((char) =>
-          fetch(`${store.CHARACTER_URL}/${char.uid}`).then((res) => res.json())
-        );
-        const detailedCharacters = await Promise.all(promises);
-        const charactersWithUID = detailedCharacters.map((char, index) => ({
-          ...char.result.properties,
-          uid: data.results[index].uid,
-        }));
-        dispatch({ type: "SET_CHARACTERS", payload: charactersWithUID });
-      });
-  }, []);
-
-  useEffect(() => {
-    fetch(`${store.PLANETS_URL}`)
-      .then((res) => res.json())
-      .then(async (data) => {
-        const promises = data.results.map((planet) =>
-          fetch(`${store.PLANETS_URL}/${planet.uid}`).then((res) => res.json())
-        );
-        const detailedPlanets = await Promise.all(promises);
-
-        const planetsWithUID = detailedPlanets.map((planet, index) => ({
-          ...planet.result.properties,
-          uid: data.results[index].uid,
-        }));
-
-        dispatch({ type: "SET_PLANETS", payload: planetsWithUID });
-      });
-  }, []);
-
-  useEffect(() => {
-    fetch(`${store.VEHICLE_URL}`)
-      .then((res) => res.json())
-      .then(async (data) => {
-        const promises = data.results.map((vehicle) =>
-          fetch(`${store.VEHICLE_URL}/${vehicle.uid}`).then((res) => res.json())
-        );
-        const detailedVehicles = await Promise.all(promises);
-
-        const vehiclesWithUID = detailedVehicles.map((vehicle, index) => ({
-          ...vehicle.result.properties,
-          uid: data.results[index].uid,
-        }));
-
-        dispatch({ type: "SET_VEHICLES", payload: vehiclesWithUID });
-      });
-  }, []);
+  useFetchWithUIDs(store.CHARACTER_URL, store.CHARACTER_IMAGE_URL, "characters", "SET_CHARACTERS", dispatch);
+  useFetchWithUIDs(store.PLANETS_URL, store.PLANETS_IMAGE_URL, "planets", "SET_PLANETS", dispatch);
+  useFetchWithUIDs(store.VEHICLE_URL, store.VEHICLE_IMAGE_URL, "vehicles", "SET_VEHICLES", dispatch);
 
   return (
     <div className="p-2">
-      <h1> Characters </h1>
-      <div
-        className="d-flex overflow-auto"
-        style={{
-          scrollSnapType: "x mandatory",
-          gap: "1rem",
-          paddingBottom: "1rem",
-        }}
-      >
-        {characterData.map((char) => (
-          <div
-            key={char.name}
-            className="card m-2"
-            style={{
-              width: "18rem",
-              flexShrink: "0",
-            }}
-          >
-            <img
-              src={`${store.CHARACTER_IMAGE_URL}/${char.uid}.jpg`}
-              onError={(e) =>
-                (e.target.src = "https://placehold.co/400x200?text=No+Image")
-              }
-              className="card-img-top"
-              alt={char.name}
-            />
-
-            <div className="card-body">
-              <h5 className="card-title">{char.name}</h5>
-              <p className="card-text">Gender: {char.gender}</p>
-              <p className="card-text">Hair Color: {char.hair_color}</p>
-              <p className="card-text">Eye Color: {char.eye_color}</p>
-              <div className="d-flex justify-content-between gap-1">
-                <button
-                  key={char.uid}
-                  className="btn btn-outline-primary"
-                  onClick={() => navigate(`/character-info/${char.uid}`)}
-                >
-                  Read More
-                </button>
-                <button
-                  className="btn btn-outline-warning"
-                  onClick={() =>
-                    dispatch({ type: "ADD_FAVORITE", payload: char.name })
-                  }
-                >
-                  <i className="fa-solid fa-heart"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <h1> Planets </h1>
-      <div
-        className="d-flex overflow-auto"
-        style={{
-          scrollSnapType: "x mandatory",
-          gap: "1rem",
-          paddingBottom: "1rem",
-        }}
-      >
-        {planetData.map((planet) => (
-          <div
-            key={planet.name}
-            className="card m-2"
-            style={{
-              width: "18rem",
-              flexShrink: "0",
-            }}
-          >
-            <img
-              src={`${store.PLANETS_IMAGE_URL}/${planet.uid}.jpg`}
-              className="card-img-top"
-              alt={planet.name}
-            />
-
-            <div className="card-body">
-              <h5 className="card-title">{planet.name}</h5>
-              <p className="card-text">Population: {planet.population}</p>
-              <p className="card-text">Terrain: {planet.terrain}</p>
-              <div className="d-flex justify-content-between gap-1">
-                <button
-                  key={planet.uid}
-                  className="btn btn-outline-primary"
-                  onClick={() => navigate(`/planet-info/${planet.uid}`)}
-                >
-                  Read More
-                </button>
-                <button
-                  className="btn btn-outline-warning"
-                  onClick={() =>
-                    dispatch({ type: "ADD_FAVORITE", payload: planet.name })
-                  }
-                >
-                  <i className="fa-solid fa-heart"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-      <h1> Vehicles </h1>
-      <div
-        className="d-flex overflow-auto"
-        style={{
-          scrollSnapType: "x mandatory",
-          gap: "1rem",
-          paddingBottom: "1rem",
-        }}
-      >
-        {vehicleData.map((vehicle) => (
-          <div
-            key={vehicle.name}
-            className="card m-2"
-            style={{
-              width: "18rem",
-              flexShrink: "0",
-            }}
-          >
-            <img
-              src={`${store.VEHICLE_IMAGE_URL}/${vehicle.uid}.jpg`}
-              className="card-img-top"
-              alt={vehicle.name}
-            />
-
-            <div className="card-body">
-              <h5 className="card-title">{vehicle.name}</h5>
-              <p className="card-text">Model: {vehicle.model}</p>
-              <p className="card-text">Passengers: {vehicle.passengers}</p>
-              <div className="d-flex justify-content-between gap-1">
-                <button
-                  key={vehicle.uid}
-                  className="btn btn-outline-primary"
-                  onClick={() => navigate(`/vehicle-info/${vehicle.uid}`)}
-                >
-                  Read More
-                </button>
-                <button
-                  className="btn btn-outline-warning"
-                  onClick={() =>
-                    dispatch({ type: "ADD_FAVORITE", payload: vehicle.name })
-                  }
-                >
-                  <i className="fa-solid fa-heart"></i>
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+      <CardSection
+        title="Characters"
+        data={store.characters}
+        imageBaseUrl={store.CHARACTER_IMAGE_URL}
+        routePrefix="character"
+        infoFields={["gender", "hair_color", "eye_color"]}
+        dispatch={dispatch}
+        type="character"
+      />
+      <CardSection
+        title="Planets"
+        data={store.planets}
+        imageBaseUrl={store.PLANETS_IMAGE_URL}
+        routePrefix="planet"
+        infoFields={["population", "terrain"]}
+        dispatch={dispatch}
+        type="planet"
+      />
+      <CardSection
+        title="Vehicles"
+        data={store.vehicles}
+        imageBaseUrl={store.VEHICLE_IMAGE_URL}
+        routePrefix="vehicle"
+        infoFields={["model", "passengers"]}
+        dispatch={dispatch}
+        type="vehicle"
+      />
     </div>
   );
 };
