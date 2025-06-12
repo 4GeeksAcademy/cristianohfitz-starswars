@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer";
 import { useParams } from "react-router-dom";
 
-export const Veiculos = () => {
+export const VehicleInfo = () => {
   const { store } = useGlobalReducer();
   const { uid } = useParams();
   const [vehicle, setVehicle] = useState(null);

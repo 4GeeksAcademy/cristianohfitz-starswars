@@ -7,9 +7,9 @@ import {
 } from "react-router-dom";
 import { Layout } from "./pages/Layout";
 import { Home } from "./pages/Home";
-import { Personagens } from "./pages/Personagens";
-import { Planetas } from "./pages/Planetas"; 
-import { Veiculos } from "./pages/Veiculos";
+import { PersonagemInfo } from "./pages/PersonagemInfo";
+import { PlanetInfo } from "./pages/PlanetsInfo"; 
+import { VehicleInfo } from "./pages/VehiclesInfo";
 
 export const router = createBrowserRouter(
     createRoutesFromElements(
@@ -24,9 +24,9 @@ export const router = createBrowserRouter(
 
         {/* Nested Routes: Defines sub-routes within the BaseHome component. */}
         <Route path= "/" element={<Home />} />
-        <Route path="/Personagens/:uid" element={ <Personagens />} />  
-        <Route path="/Planetas/:uid" element={ <Planetas />} />
-        <Route path="/Veiculos/:uid" element={ <Veiculos />} />
+        <Route path="/character-info/:uid" element={ <PersonagemInfo />} />  
+        <Route path="/planet-info/:uid" element={ <PlanetInfo />} />
+        <Route path="/vehicle-info/:uid" element={ <VehicleInfo />} />
       </Route>
     )
 );

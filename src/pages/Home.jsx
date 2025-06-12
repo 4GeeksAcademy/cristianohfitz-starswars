@@ -46,7 +46,7 @@ const CardSection = ({ title, data, imageBaseUrl, routePrefix, infoFields, dispa
               ))}
               <div className="d-flex justify-content-between gap-1">
                 <button className="btn btn-outline-primary" onClick={() => navigate(`/${routePrefix}-info/${item.uid}`)}>
-                  Read More
+                  Learn More
                 </button>
                 <button
                   className="btn btn-outline-warning"
